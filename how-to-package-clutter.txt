@@ -38,6 +38,15 @@ FileTime=129409234222130000&Build=17950"
 
 msiexec /i Wix35.msi
 
+WiX tries to use a library called msi.dll. Wine has a wrapper for this
+but it doesn't seem to work with WiX. However it's possible to use a
+copy from a native installation of Windows instead. To get this to
+work, copy the file from a Windows machine and tell Wine not to use
+the override like so:
+
+cp msi.dll $CLUTTER_MSI_ROOT/drive_c/windows/system32/msi.dll
+export WINEDLLOVERRIDES="msi=n"
+
 Now we want to compile Clutter and Cogl. We want separate prefixes for
 the dependencies, Cogl and Clutter itself so that we can easily split
 them into separate features in the MSI. The dependencies will go in
@@ -113,3 +122,23 @@ wget -q -O - \
             PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh" \
             PKG_CONFIG_PATH="$CLUTTER_MSI_ROOT/cogl-install/lib/pkgconfig"
 make all install
+
+Now that we have the directory structure created, we can use the
+included scripts to generate a .wxs file:
+
+cd "$CLUTTER_MSI_ROOT"
+$PATH_TO_THE_SCRIPT/generate-msi.pl \
+  --packageversion="1.7.6.1" \
+  "Clutter dependencies:clutter-cross" \
+  "Cogl:cogl-install" \
+  "Clutter:clutter-install" \
+  > clutter.wxs
+
+Now we can use WiX to generate the MSI:
+
+wine c:/Program\ Files\ \(x86\)/Windows\ Installer\ XML\ v3.5/bin/candle.exe \
+     clutter.wxs
+wine c:/Program\ Files\ \(x86\)/Windows\ Installer\ XML\ v3.5/bin/light.exe \
+     clutter.wixobj
+
+You should now have a working clutter.msi generated.
