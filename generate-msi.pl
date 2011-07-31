@@ -72,9 +72,9 @@ sub encode_entities
     return $text;
 }
 
-sub dump_files
+sub dump_directories
 {
-    my ($base_dir, $files, $indentation) = @_;
+    my ($files, $indentation) = @_;
 
     for my $file (@$files)
     {
@@ -83,24 +83,67 @@ sub dump_files
             print("$indentation" .
                   "<Directory Id='" . encode_entities($file->{id}) . "' " .
                   "Name='" . encode_entities($file->{name}) . "'>\n");
-            dump_files("$base_dir/$file->{name}",
-                       $file->{children},
-                       "$indentation  ");
+            dump_directories($file->{children},
+                             "$indentation  ");
             print("$indentation</Directory>\n");
+        }
+    }
+}
+
+sub dump_directories_for_features
+{
+    my ($features, $indentation) = @_;
+
+    for my $feature (@$features)
+    {
+        dump_directories($feature->{files}, $indentation);
+    }
+}
+
+sub dump_files
+{
+    my ($base_dir, $parent_id, $all_files, $indentation) = @_;
+    my @dirs = ();
+    my @files = ();
+
+    for my $file (@$all_files)
+    {
+        if ($file->{type} eq "directory")
+        {
+            push(@dirs, $file);
         }
         else
         {
-            print("$indentation" .
+            push(@files, $file);
+        }
+    }
+
+    if (@files > 0)
+    {
+        print($indentation .
+              "<DirectoryRef Id='" . encode_entities($parent_id) . "'>\n");
+        for my $file (@files)
+        {
+            print("$indentation  " .
                   "<Component Id='" . encode_entities($file->{id}) . "' " .
                   "Guid='*'>\n" .
-                  "$indentation  " .
+                  "$indentation    " .
                   "<File Id='" . encode_entities($file->{id}) . "' " .
                   "Source='" .
                   encode_entities($base_dir . "/" . $file->{name}) . "' " .
                   "Name='" . encode_entities($file->{name}) . "' " .
                   "KeyPath='yes' />\n" .
-                  "$indentation</Component>\n");
+                  "$indentation  </Component>\n");
         }
+        print("$indentation</DirectoryRef>\n");
+    }
+
+    for my $file (@dirs)
+    {
+        dump_files("$base_dir/$file->{name}",
+                   $file->{id},
+                   $file->{children},
+                   $indentation);
     }
 }
 
@@ -110,7 +153,8 @@ sub dump_files_for_features
 
     for my $feature (@$features)
     {
-        dump_files($feature->{directory}, $feature->{files}, $indentation);
+        dump_files($feature->{directory}, "APPLICATIONROOTDIRECTORY",
+                   $feature->{files}, $indentation);
     }
 }
 
@@ -161,7 +205,11 @@ sub process_template
         {
             my $indentation = $1;
 
-            if ($2 eq "FILES")
+            if ($2 eq "DIRECTORIES")
+            {
+                dump_directories_for_features($features, $indentation);
+            }
+            elsif ($2 eq "FILES")
             {
                 dump_files_for_features($features, $indentation);
             }

@@ -11,10 +11,11 @@
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='PFiles'>
         <Directory Id='APPLICATIONROOTDIRECTORY' Name='Clutter'>
-          @FILES@
+          @DIRECTORIES@
         </Directory>
       </Directory>
     </Directory>
+    @FILES@
     @FEATURES@
   </Product>
 </Wix>
