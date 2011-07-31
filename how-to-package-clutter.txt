@@ -38,10 +38,12 @@ FileTime=129409234222130000&Build=17950"
 
 msiexec /i Wix35.msi
 
-Now we want to compile Clutter and Cogl. We'll install it and all of
-its dependencies into $CLUTTER_MSI_ROOT/clutter-cross. It's best to
-delete this directory before starting a fresh build so we can be sure
-the MSI will only contain the minimum files.
+Now we want to compile Clutter and Cogl. We want separate prefixes for
+the dependencies, Cogl and Clutter itself so that we can easily split
+them into separate features in the MSI. The dependencies will go in
+$CLUTTER_MSI_ROOT/clutter-cross. It's best to delete these directories
+before starting a fresh build so we can be sure the MSI will only
+contain the minimum files.
 
 There is a script for Clutter to fetch binaries of all of its
 dependencies. Let's use that:
@@ -81,7 +83,7 @@ Ok, now we'll compile it:
             --target="i686-pc-mingw32" \
             --disable-glx \
             --enable-wgl \
-            --prefix="$CLUTTER_MSI_ROOT/clutter-cross" \
+            --prefix="$CLUTTER_MSI_ROOT/cogl-install" \
             CFLAGS="-O2 -mms-bitfields" \
             PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh"
 make all install
@@ -106,7 +108,8 @@ wget -q -O - \
 ./configure --host="i686-pc-mingw32" \
             --target="i686-pc-mingw32" \
             --with-flavour=win32 \
-            --prefix="$CLUTTER_MSI_ROOT/clutter-cross" \
+            --prefix="$CLUTTER_MSI_ROOT/clutter-install" \
             CFLAGS="-O2 -mms-bitfields" \
-            PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh"
+            PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh" \
+            PKG_CONFIG_PATH="$CLUTTER_MSI_ROOT/cogl-install/lib/pkgconfig"
 make all install
