@@ -1,0 +1,112 @@
+This documents how to build Clutter and Cogl and them make a Windows
+installer containing the binaries and all of the dependencies using
+WiX. WiX is an open source package from Microsoft for generating MSI
+files. These instructions assume you are cross compiling Clutter/Cogl
+from a Linux installation and running WiX with Wine.
+
+Make sure you have Wine and the MinGW compiler installed. On Fedora
+these can be installed with:
+
+ sudo yum install mingw32-gcc wine
+
+Make a directory which we will use as the root for everything:
+
+ CLUTTER_MSI_ROOT=$HOME/clutter-msi
+ mkdir -p "$CLUTTER_MSI_ROOT"
+ cd "$CLUTTER_MSI_ROOT"
+
+Set this as the Wine prefix so we can also install WiX there.
+
+ export WINEPREFIX="$CLUTTER_MSI_ROOT"
+
+To run WiX we also need mono, so let's install that now:
+
+MONO_DIR="http://ftp.novell.com/pub/mono/archive/2.10/windows-installer/5/"
+MONO_INSTALLER="mono-2.10-gtksharp-2.12.10-win32-5.exe"
+wget "$MONO_DIR/$MONO_INSTALLER"
+wine "$MONO_INSTALLER"
+
+Choose to just install mono, no need for mono-gtk, accept license,
+etc. When running the installer Wine complained about requiring Gecko
+but it seems to work to just hit cancel and ignore the complaint.
+
+Now install WiX:
+
+wget -O Wix35.msi "http://download.codeplex.com/Project/Download/\
+FileDownload.aspx?ProjectName=wix&DownloadId=204417&\
+FileTime=129409234222130000&Build=17950"
+
+msiexec /i Wix35.msi
+
+Now we want to compile Clutter and Cogl. We'll install it and all of
+its dependencies into $CLUTTER_MSI_ROOT/clutter-cross. It's best to
+delete this directory before starting a fresh build so we can be sure
+the MSI will only contain the minimum files.
+
+There is a script for Clutter to fetch binaries of all of its
+dependencies. Let's use that:
+
+CLUTTER_GIT="http://git.gnome.org/browse/clutter/plain"
+FETCH_SCRIPT="/build/mingw/mingw-fetch-dependencies.sh"
+wget "$CLUTTER_GIT/$FETCH_SCRIPT"
+bash `basename "$FETCH_SCRIPT"`
+
+Just press enter to accept the default directories.
+
+Now we'll get the sources for Cogl:
+
+COGL_DIR="http://source.clutter-project.org/sources/cogl/1.7/"
+COGL_TAR="cogl-1.7.4.tar.bz2"
+wget "$COGL_DIR/$COGL_TAR"
+tar -jvxf "$COGL_TAR"
+cd `echo $COGL_TAR | sed 's/\.tar.*//'`
+
+Version 1.7.4 of Cogl has some bugs which means that it won't work on
+Windows. Let's patch it to fix this. Note, this shouldn't be needed
+with later versions.
+
+COGL_GIT_PATCH="http://git.gnome.org/browse/cogl/patch/?id="
+for COMMIT in d259a87602516 f7bdc92d6c397; do
+ ( wget -q -O - \
+      "${COGL_GIT_PATCH}${COMMIT}" \
+      | patch -f -p1 );
+done
+wget -q -O - \
+  "http://bugzilla-attachments.gnome.org/attachment.cgi?id=192883" \
+  | patch -p1
+
+Ok, now we'll compile it:
+
+./configure --host="i686-pc-mingw32" \
+            --target="i686-pc-mingw32" \
+            --disable-glx \
+            --enable-wgl \
+            --prefix="$CLUTTER_MSI_ROOT/clutter-cross" \
+            CFLAGS="-O2 -mms-bitfields" \
+            PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh"
+make all install
+
+Next we'll compile Clutter:
+
+cd "$CLUTTER_MSI_ROOT"
+CLUTTER_DIR="http://source.clutter-project.org/sources/clutter/1.7/"
+CLUTTER_TAR="clutter-1.7.6.tar.bz2"
+wget "$CLUTTER_DIR/$CLUTTER_TAR"
+tar -jvxf "$CLUTTER_TAR"
+cd `echo $CLUTTER_TAR | sed 's/\.tar.*//'`
+
+Clutter 1.7.6 has a bug so that it won't build on Windows. Let's patch
+this too:
+
+CLUTTER_GIT_PATCH="http://git.gnome.org/browse/clutter/patch/?id="
+wget -q -O - \
+     "${CLUTTER_GIT_PATCH}91ace65cae" \
+     | patch -p1
+
+./configure --host="i686-pc-mingw32" \
+            --target="i686-pc-mingw32" \
+            --with-flavour=win32 \
+            --prefix="$CLUTTER_MSI_ROOT/clutter-cross" \
+            CFLAGS="-O2 -mms-bitfields" \
+            PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh"
+make all install
