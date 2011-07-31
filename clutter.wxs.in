@@ -6,6 +6,8 @@
     <Package Description='Development package for Clutter'
              Comments='This package contains all of the libraries, headers and dependencies needed to create a Clutter Application'
              Manufacturer='Intel Corporation' InstallerVersion='200' Compressed='yes' />
+    <Media Id="1" Cabinet="clutter.cab" EmbedCab="yes" />
+
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='PFiles'>
         <Directory Id='APPLICATIONROOTDIRECTORY' Name='Clutter'>
