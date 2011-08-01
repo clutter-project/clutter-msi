@@ -47,6 +47,18 @@ the override like so:
 cp msi.dll $CLUTTER_MSI_ROOT/drive_c/windows/system32/msi.dll
 export WINEDLLOVERRIDES="msi=n"
 
+To compile Clutter applications with Visual Studio we need import
+libraries for the DLLs. We can't generate these with MinGW but
+Microsoft has a lib.exe tool to generate these from a .def file which
+MinGW will generate. This is available for free with Visual Studio
+Express or the Windows SDK. However, I couldn't get either of these to
+install via Wine so instead I just installed them on a Windows machine
+and copied the files over. Once it is copied you can use wine regedit
+to edit the PATH environment variable to include the following:
+
+c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin;
+c:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE
+
 Now we want to compile Clutter and Cogl. We want separate prefixes for
 the dependencies, Cogl and Clutter itself so that we can easily split
 them into separate features in the MSI. The dependencies will go in
@@ -123,10 +135,30 @@ wget -q -O - \
             PKG_CONFIG_PATH="$CLUTTER_MSI_ROOT/cogl-install/lib/pkgconfig"
 make all install
 
+We can now make the .lib import libraries to make Clutter easier to
+use with Visual Studio:
+
+cd "$CLUTTER_MSI_ROOT"
+wine lib /machine:i386 \
+     /def:clutter-1.7.6/clutter/.libs/libclutter-win32-1.0-0.dll.def \
+     /out:clutter-win32-1.0.lib
+cp clutter-win32-1.0.lib clutter-install/lib/
+wine lib /machine:i386 \
+     /def:cogl-1.7.4/cogl/.libs/libcogl-2.dll.def \
+     /out:cogl.lib
+cp cogl.lib cogl-install/lib/
+wine lib /machine:i386 \
+     /def:cogl-1.7.4/cogl-pango/.libs/libcogl-pango-0.dll.def \
+     /out:cogl-pango.lib
+cp cogl-pango.lib cogl-install/lib/
+wine lib /machine:i386 \
+     /def:build/json-glib-0.12.2/json-glib/.libs/libjson-glib-1.0-0.dll.def \
+     /out:json-glib-1.0.lib
+cp json-glib-1.0.lib clutter-cross/lib/
+
 Now that we have the directory structure created, we can use the
 included scripts to generate a .wxs file:
 
-cd "$CLUTTER_MSI_ROOT"
 $PATH_TO_THE_SCRIPT/generate-msi.pl \
   --packageversion="1.7.6.1" \
   "Clutter dependencies:clutter-cross" \
