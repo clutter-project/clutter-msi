@@ -88,6 +88,11 @@ bash `basename "$FETCH_SCRIPT"`
 
 Just press enter to accept the default directories.
 
+We don't need any of the packaging scripts from the dependencies so we
+can just delete them:
+
+rm -vrf clutter-cross/src
+
 ====== Compiling Cogl ======
 
 Now we'll get the sources for Cogl:
