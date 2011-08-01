@@ -8,6 +8,7 @@ use Fcntl ':mode';
 use File::Basename;
 
 my $package_version;
+my %guids = ();
 
 {
     my $id = 1;
@@ -15,6 +16,15 @@ my $package_version;
     {
         return "Id" . $id++;
     }
+}
+
+sub generate_guid
+{
+    my $guid = `uuidgen`;
+    chomp($guid);
+    die ("Duplicate guid generated!") if (defined($guids{$guid}));
+    $guids{$guid} = 1;
+    return $guid;
 }
 
 sub scan_folder
@@ -126,7 +136,7 @@ sub dump_files
         {
             print("$indentation  " .
                   "<Component Id='" . encode_entities($file->{id}) . "' " .
-                  "Guid='*'>\n" .
+                  "Guid='" . generate_guid() . "'>\n" .
                   "$indentation    " .
                   "<File Id='" . encode_entities($file->{id}) . "' " .
                   "Source='" .
@@ -222,6 +232,10 @@ sub process_template
                 die ("Missing --packageversion option")
                     unless defined($package_version);
                 print("$1" . encode_entities($package_version) . "$3\n");
+            }
+            elsif ($2 eq "GUID")
+            {
+                print("$1" . generate_guid() . "$3\n");
             }
             else
             {

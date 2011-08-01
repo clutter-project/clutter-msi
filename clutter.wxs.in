@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Id='*' Name='Clutter SDK' Language='1033' 
+  <Product Id='@GUID@' Name='Clutter SDK' Language='1033' 
            Version='@PACKAGE_VERSION@' Manufacturer='Intel Corporation'
            UpgradeCode='0c3af435-c319-423b-9634-c0f2bf90030b'>
     <Package Description='Development package for Clutter'
