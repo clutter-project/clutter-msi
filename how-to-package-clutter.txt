@@ -164,19 +164,23 @@ use with Visual Studio:
 cd "$CLUTTER_MSI_ROOT"
 wine lib /machine:i386 \
      /def:clutter-1.7.6/clutter/.libs/libclutter-win32-1.0-0.dll.def \
-     /out:clutter-win32-1.0.lib
+     /out:clutter-win32-1.0.lib \
+     /name:libclutter-win32-1.0-0.dll
 cp clutter-win32-1.0.lib clutter-install/lib/
 wine lib /machine:i386 \
      /def:cogl-1.7.4/cogl/.libs/libcogl-2.dll.def \
-     /out:cogl.lib
+     /out:cogl.lib \
+     /name:libcogl-2.dll
 cp cogl.lib cogl-install/lib/
 wine lib /machine:i386 \
      /def:cogl-1.7.4/cogl-pango/.libs/libcogl-pango-0.dll.def \
-     /out:cogl-pango.lib
+     /out:cogl-pango.lib \
+     /name:libcogl-pango-0.dll
 cp cogl-pango.lib cogl-install/lib/
 wine lib /machine:i386 \
      /def:build/json-glib-0.12.2/json-glib/.libs/libjson-glib-1.0-0.dll.def \
-     /out:json-glib-1.0.lib
+     /out:json-glib-1.0.lib \
+     /name:libjson-glib-1.0-0.dll
 cp json-glib-1.0.lib clutter-cross/lib/
 
 ====== Build the MSI file ======
