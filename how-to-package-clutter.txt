@@ -1,8 +1,12 @@
+====== Intro ======
+
 This documents how to build Clutter and Cogl and them make a Windows
 installer containing the binaries and all of the dependencies using
 WiX. WiX is an open source package from Microsoft for generating MSI
 files. These instructions assume you are cross compiling Clutter/Cogl
 from a Linux installation and running WiX with Wine.
+
+====== Basic setup ======
 
 Make sure you have Wine and the MinGW compiler installed. On Fedora
 these can be installed with:
@@ -19,6 +23,8 @@ Set this as the Wine prefix so we can also install WiX there.
 
  export WINEPREFIX="$CLUTTER_MSI_ROOT"
 
+====== Installing Mono ======
+
 To run WiX we also need mono, so let's install that now:
 
 MONO_DIR="http://ftp.novell.com/pub/mono/archive/2.10/windows-installer/5/"
@@ -29,6 +35,8 @@ wine "$MONO_INSTALLER"
 Choose to just install mono, no need for mono-gtk, accept license,
 etc. When running the installer Wine complained about requiring Gecko
 but it seems to work to just hit cancel and ignore the complaint.
+
+====== Installing WiX ======
 
 Now install WiX:
 
@@ -47,6 +55,8 @@ the override like so:
 cp msi.dll $CLUTTER_MSI_ROOT/drive_c/windows/system32/msi.dll
 export WINEDLLOVERRIDES="msi=n"
 
+====== Installing lib.exe ======
+
 To compile Clutter applications with Visual Studio we need import
 libraries for the DLLs. We can't generate these with MinGW but
 Microsoft has a lib.exe tool to generate these from a .def file which
@@ -58,6 +68,8 @@ to edit the PATH environment variable to include the following:
 
 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin;
 c:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE
+
+====== Getting the dependencies ======
 
 Now we want to compile Clutter and Cogl. We want separate prefixes for
 the dependencies, Cogl and Clutter itself so that we can easily split
@@ -75,6 +87,8 @@ wget "$CLUTTER_GIT/$FETCH_SCRIPT"
 bash `basename "$FETCH_SCRIPT"`
 
 Just press enter to accept the default directories.
+
+====== Compiling Cogl ======
 
 Now we'll get the sources for Cogl:
 
@@ -109,6 +123,8 @@ Ok, now we'll compile it:
             PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh"
 make all install
 
+====== Compiling Clutter ======
+
 Next we'll compile Clutter:
 
 cd "$CLUTTER_MSI_ROOT"
@@ -135,6 +151,8 @@ wget -q -O - \
             PKG_CONFIG_PATH="$CLUTTER_MSI_ROOT/cogl-install/lib/pkgconfig"
 make all install
 
+====== Making the import libraries ======
+
 We can now make the .lib import libraries to make Clutter easier to
 use with Visual Studio:
 
@@ -155,6 +173,8 @@ wine lib /machine:i386 \
      /def:build/json-glib-0.12.2/json-glib/.libs/libjson-glib-1.0-0.dll.def \
      /out:json-glib-1.0.lib
 cp json-glib-1.0.lib clutter-cross/lib/
+
+====== Build the MSI file ======
 
 Now that we have the directory structure created, we can use the
 included scripts to generate a .wxs file:
