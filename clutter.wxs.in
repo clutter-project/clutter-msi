@@ -17,5 +17,18 @@
     </Directory>
     @FILES@
     @FEATURES@
+
+    <!-- this file doesn't get installed but it is used as part of the
+         install process to fix the prefix in the .pc files -->
+    <Binary Id='fixprefix.exe' SourceFile='fixprefix.exe' />
+
+    <CustomAction Id='FixPrefixes' BinaryKey='fixprefix.exe'
+                  ExeCommand='&quot;[APPLICATIONROOTDIRECTORY]&quot; @PC_FILES@' />
+
+    <InstallExecuteSequence>
+      <Custom Action='FixPrefixes' After='InstallFinalize'>
+        NOT Installed
+      </Custom>
+    </InstallExecuteSequence>
   </Product>
 </Wix>

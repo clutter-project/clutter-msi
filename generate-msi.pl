@@ -202,6 +202,36 @@ sub dump_features
     }
 }
 
+sub dump_pc_files
+{
+    my ($features) = (@_);
+
+    sub find_pc_files
+    {
+        my $dir = shift;
+
+        for my $file (@_)
+        {
+            if ($file->{type} eq "directory")
+            {
+                find_pc_files("$dir/$file->{name}",
+                              @{$file->{children}});
+            }
+            elsif ($file->{name} =~ /\.pc\z/)
+            {
+                print("&quot;[APPLICATIONROOTDIRECTORY]" .
+                      encode_entities("$dir/$file->{name}") .
+                      "&quot; ");
+            }
+        }
+    }
+
+    for my $feature (@$features)
+    {
+        find_pc_files("", @{$feature->{files}});
+    }
+}
+
 sub process_template
 {
     my ($features, $template_name) = @_;
@@ -236,6 +266,12 @@ sub process_template
             elsif ($2 eq "GUID")
             {
                 print("$1" . generate_guid() . "$3\n");
+            }
+            elsif ($2 eq "PC_FILES")
+            {
+                print("$1");
+                dump_pc_files($features);
+                print("$3");
             }
             else
             {

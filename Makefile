@@ -13,6 +13,8 @@ LIB = WINEPREFIX="$(PWD)" wine lib.exe
 CANDLE = WINEDLLOVERRIDES="msi=n" WINEPREFIX="$(PWD)" wine candle.exe
 LIGHT = WINEDLLOVERRIDES="msi=n" WINEPREFIX="$(PWD)" wine light.exe
 
+WIXOBJS = clutter.wixobj
+
 all : clutter.msi
 
 downloads/clutter-$(CLUTTER_VERSION).tar.bz2 :
@@ -93,7 +95,10 @@ clutter-install-stamp : clutter-source-stamp deps-install-stamp cogl-install-sta
 	/name:libclutter-win32-1.0-0.dll
 	touch $@
 
-clutter.wxs : generate-msi.pl deps-install-stamp cogl-install-stamp clutter-install-stamp
+fixprefix.exe : fixprefix.c
+	$(CC) -Wall -O2 -o $@ $<
+
+clutter.wxs : generate-msi.pl deps-install-stamp cogl-install-stamp clutter-install-stamp clutter.wxs.in
 	perl generate-msi.pl \
 	--packageversion="$(PACKAGE_VERSION)" \
 	"Clutter dependencies:deps-install" \
@@ -104,9 +109,9 @@ clutter.wxs : generate-msi.pl deps-install-stamp cogl-install-stamp clutter-inst
 %.wixobj : %.wxs
 	$(CANDLE) $<
 
-clutter.msi : clutter.wixobj
-	rm -f cab-cache
+clutter.msi : $(WIXOBJS) fixprefix.exe
+	rm -rf cab-cache
 	mkdir -p cab-cache
-	$(LIGHT) -cc cab-cache $^
+	$(LIGHT) -cc cab-cache $(WIXOBJS)
 
 .PHONY : all
