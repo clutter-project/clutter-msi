@@ -13,17 +13,11 @@ these can be installed with:
 
  sudo yum install mingw32-gcc wine
 
-Make a directory which we will use as the root for everything:
-
- CLUTTER_MSI_ROOT=$HOME/clutter-msi
- mkdir -p "$CLUTTER_MSI_ROOT"
- cd "$CLUTTER_MSI_ROOT"
+====== Installing Mono ======
 
 Set this as the Wine prefix so we can also install WiX there.
 
- export WINEPREFIX="$CLUTTER_MSI_ROOT"
-
-====== Installing Mono ======
+ export WINEPREFIX="$PWD"
 
 To run WiX we also need mono, so let's install that now:
 
@@ -48,12 +42,10 @@ msiexec /i Wix35.msi
 
 WiX tries to use a library called msi.dll. Wine has a wrapper for this
 but it doesn't seem to work with WiX. However it's possible to use a
-copy from a native installation of Windows instead. To get this to
-work, copy the file from a Windows machine and tell Wine not to use
-the override like so:
+copy from a native installation of Windows instead. The Makefile will
+tell Wine not to use the override when it runs programs from WiX.
 
 cp msi.dll $CLUTTER_MSI_ROOT/drive_c/windows/system32/msi.dll
-export WINEDLLOVERRIDES="msi=n"
 
 ====== Installing lib.exe ======
 
@@ -63,143 +55,53 @@ Microsoft has a lib.exe tool to generate these from a .def file which
 MinGW will generate. This is available for free with Visual Studio
 Express or the Windows SDK. However, I couldn't get either of these to
 install via Wine so instead I just installed them on a Windows machine
-and copied the files over. Once it is copied you can use wine regedit
-to edit the PATH environment variable to include the following:
+and copied the files over.
+
+===== Setting the wine path ======
+
+So that the build process can find the windows executables we've
+installed, let's set the Wine path. Run regedit like this:
+
+WINEPREFIX="$PWD" wine regedit
+
+and then add a new string key to HKEY_CURRENT_USER\Environment called
+PATH with the value:
 
 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin;
-c:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE
-
-====== Getting the dependencies ======
-
-Now we want to compile Clutter and Cogl. We want separate prefixes for
-the dependencies, Cogl and Clutter itself so that we can easily split
-them into separate features in the MSI. The dependencies will go in
-$CLUTTER_MSI_ROOT/clutter-cross. It's best to delete these directories
-before starting a fresh build so we can be sure the MSI will only
-contain the minimum files.
-
-There is a script for Clutter to fetch binaries of all of its
-dependencies. Let's use that:
-
-CLUTTER_GIT="http://git.gnome.org/browse/clutter/plain"
-FETCH_SCRIPT="/build/mingw/mingw-fetch-dependencies.sh"
-wget "$CLUTTER_GIT/$FETCH_SCRIPT"
-bash `basename "$FETCH_SCRIPT"`
-
-Just press enter to accept the default directories.
-
-We don't need any of the packaging scripts from the dependencies so we
-can just delete them:
-
-rm -vrf clutter-cross/src
-
-====== Compiling Cogl ======
-
-Now we'll get the sources for Cogl:
-
-COGL_DIR="http://source.clutter-project.org/sources/cogl/1.7/"
-COGL_TAR="cogl-1.7.4.tar.bz2"
-wget "$COGL_DIR/$COGL_TAR"
-tar -jvxf "$COGL_TAR"
-cd `echo $COGL_TAR | sed 's/\.tar.*//'`
-
-Version 1.7.4 of Cogl has some bugs which means that it won't work on
-Windows. Let's patch it to fix this. Note, this shouldn't be needed
-with later versions.
-
-COGL_GIT_PATCH="http://git.gnome.org/browse/cogl/patch/?id="
-for COMMIT in d259a87602516 f7bdc92d6c397; do
- ( wget -q -O - \
-      "${COGL_GIT_PATCH}${COMMIT}" \
-      | patch -f -p1 );
-done
-wget -q -O - \
-  "http://bugzilla-attachments.gnome.org/attachment.cgi?id=192883" \
-  | patch -p1
-
-Ok, now we'll compile it:
-
-./configure --host="i686-pc-mingw32" \
-            --target="i686-pc-mingw32" \
-            --disable-glx \
-            --enable-wgl \
-            --prefix="$CLUTTER_MSI_ROOT/cogl-install" \
-            CFLAGS="-O2 -mms-bitfields" \
-            PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh"
-make all install
-
-====== Compiling Clutter ======
-
-Next we'll compile Clutter:
-
-cd "$CLUTTER_MSI_ROOT"
-CLUTTER_DIR="http://source.clutter-project.org/sources/clutter/1.7/"
-CLUTTER_TAR="clutter-1.7.6.tar.bz2"
-wget "$CLUTTER_DIR/$CLUTTER_TAR"
-tar -jvxf "$CLUTTER_TAR"
-cd `echo $CLUTTER_TAR | sed 's/\.tar.*//'`
-
-Clutter 1.7.6 has a bug so that it won't build on Windows. Let's patch
-this too:
-
-CLUTTER_GIT_PATCH="http://git.gnome.org/browse/clutter/patch/?id="
-wget -q -O - \
-     "${CLUTTER_GIT_PATCH}91ace65cae" \
-     | patch -p1
-
-./configure --host="i686-pc-mingw32" \
-            --target="i686-pc-mingw32" \
-            --with-flavour=win32 \
-            --prefix="$CLUTTER_MSI_ROOT/clutter-install" \
-            CFLAGS="-O2 -mms-bitfields" \
-            PKG_CONFIG="$CLUTTER_MSI_ROOT/build/run-pkg-config.sh" \
-            PKG_CONFIG_PATH="$CLUTTER_MSI_ROOT/cogl-install/lib/pkgconfig"
-make all install
-
-====== Making the import libraries ======
-
-We can now make the .lib import libraries to make Clutter easier to
-use with Visual Studio:
-
-cd "$CLUTTER_MSI_ROOT"
-wine lib /machine:i386 \
-     /def:clutter-1.7.6/clutter/.libs/libclutter-win32-1.0-0.dll.def \
-     /out:clutter-win32-1.0.lib \
-     /name:libclutter-win32-1.0-0.dll
-cp clutter-win32-1.0.lib clutter-install/lib/
-wine lib /machine:i386 \
-     /def:cogl-1.7.4/cogl/.libs/libcogl-2.dll.def \
-     /out:cogl.lib \
-     /name:libcogl-2.dll
-cp cogl.lib cogl-install/lib/
-wine lib /machine:i386 \
-     /def:cogl-1.7.4/cogl-pango/.libs/libcogl-pango-0.dll.def \
-     /out:cogl-pango.lib \
-     /name:libcogl-pango-0.dll
-cp cogl-pango.lib cogl-install/lib/
-wine lib /machine:i386 \
-     /def:build/json-glib-0.12.2/json-glib/.libs/libjson-glib-1.0-0.dll.def \
-     /out:json-glib-1.0.lib \
-     /name:libjson-glib-1.0-0.dll
-cp json-glib-1.0.lib clutter-cross/lib/
+c:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE;
+c:\Program Files (x86)\Windows Installer XML v3.5\bin
 
 ====== Build the MSI file ======
 
-Now that we have the directory structure created, we can use the
-included scripts to generate a .wxs file:
+Now that everything is setup we should just be able to run make to
+build clutter.msi. If it works this should to the following:
 
-$PATH_TO_THE_SCRIPT/generate-msi.pl \
-  --packageversion="1.7.6.1" \
-  "Clutter dependencies:clutter-cross" \
-  "Cogl:cogl-install" \
-  "Clutter:clutter-install" \
-  > clutter.wxs
+* Fetch the clutter source from clutter-project.org
 
-Now we can use WiX to generate the MSI:
+* Download all of the prebuild dependencies using the
+  mingw-fetch-dependencies.sh script from the Clutter source. This
+  will be extracted into a prefix called deps-install
 
-wine c:/Program\ Files\ \(x86\)/Windows\ Installer\ XML\ v3.5/bin/candle.exe \
-     clutter.wxs
-wine c:/Program\ Files\ \(x86\)/Windows\ Installer\ XML\ v3.5/bin/light.exe \
-     clutter.wixobj
+* Generate a .lib file for json-glib so that it can be used with
+  Visual Studio.
 
-You should now have a working clutter.msi generated.
+* Download the source for Cogl
+
+* Patch it to fix some bugs in version 1.7.4
+
+* Build and install cogl into the cogl-install prefix
+
+* Make import libraries for cogl and cogl-pango
+
+* Patch Clutter to fix some bugs in 1.7.6
+
+* Build and install Clutter into the clutter-install prefix
+
+* Make an import library for clutter
+
+* Generate a .wxs using the directory structure in the three install
+  prefixes
+
+* Generate a .wixobj file
+
+* Link the .wixobj into the final clutter.msi file.
