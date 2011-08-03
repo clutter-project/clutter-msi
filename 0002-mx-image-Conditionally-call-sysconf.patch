@@ -1,0 +1,32 @@
+From 553fce2c44770883a7d833fecbcfd8f934216700 Mon Sep 17 00:00:00 2001
+From: Neil Roberts <neil@linux.intel.com>
+Date: Wed, 3 Aug 2011 14:39:15 +0100
+Subject: [PATCH 2/3] mx-image: Conditionally call sysconf
+
+This adds a #ifdef around the call to sysconf with a fallback to
+assume there is only one processor on systems without it. This makes
+it easier to compile on non-Unix systems.
+---
+ mx/mx-image.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/mx/mx-image.c b/mx/mx-image.c
+index 355eb0e..d70ad10 100644
+--- a/mx/mx-image.c
++++ b/mx/mx-image.c
+@@ -1550,7 +1550,12 @@ mx_image_set_async (MxImage         *image,
+   if (!mx_image_threads)
+     {
+       mx_image_threads = g_thread_pool_new (mx_image_async_cb, NULL,
++#ifdef _SC_NPROCESSORS_ONLN
+                                             sysconf (_SC_NPROCESSORS_ONLN),
++#else
++                                            /* FIXME: add more OSs */
++                                            1,
++#endif
+                                             FALSE, &err);
+       if (!mx_image_threads)
+         {
+-- 
+1.7.3.16.g9464b
+

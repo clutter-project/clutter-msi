@@ -2,6 +2,8 @@ CLUTTER_MAJOR_VERSION = 1.7
 CLUTTER_VERSION = 1.7.6
 COGL_MAJOR_VERSION = 1.7
 COGL_VERSION = 1.7.4
+MX_MAJOR_VERSION = 1.3
+MX_VERSION = 1.3.0
 PACKAGE_VERSION = $(CLUTTER_VERSION).1
 CC = i686-pc-mingw32-gcc
 CLUTTER_GIT_PATCH = http://git.gnome.org/browse/clutter/patch/?id=
@@ -20,6 +22,10 @@ all : clutter.msi
 downloads/clutter-$(CLUTTER_VERSION).tar.bz2 :
 	mkdir -p downloads
 	wget -O $@ http://source.clutter-project.org/sources/clutter/$(CLUTTER_MAJOR_VERSION)/clutter-$(CLUTTER_VERSION).tar.bz2
+
+downloads/mx-$(MX_VERSION).tar.bz2 :
+	mkdir -p downloads
+	wget -O $@ http://source.clutter-project.org/sources/mx/$(MX_MAJOR_VERSION)/mx-$(MX_VERSION).tar.bz2
 
 downloads/cogl-$(COGL_VERSION).tar.bz2 :
 	mkdir -p downloads
@@ -43,6 +49,17 @@ cogl-source-stamp : downloads/cogl-$(COGL_VERSION).tar.bz2
 	         "$(COGL_GIT_PATCH)$$x" \
 	       | patch -f -p1; done ); \
 	fi
+	touch $@
+
+mx-source-stamp : downloads/mx-$(MX_VERSION).tar.bz2
+	tar -jxf $<
+	( cd mx-$(MX_VERSION) \
+	  && for x in \
+	      0001-mx-create-image-cache-Use-GDir-instead-of-opendir.patch \
+	      0002-mx-image-Conditionally-call-sysconf.patch \
+	      0003-configure.ac-Add-no-undefined-to-the-libtool-flags.patch; \
+	       do \
+	      patch -p1 < ../"$$x" || exit 1; done )
 	touch $@
 
 deps-install-stamp : clutter-source-stamp
@@ -95,15 +112,34 @@ clutter-install-stamp : clutter-source-stamp deps-install-stamp cogl-install-sta
 	/name:libclutter-win32-1.0-0.dll
 	touch $@
 
+mx-install-stamp : mx-source-stamp clutter-install-stamp
+	cd mx-$(MX_VERSION) && \
+	  gnome-autogen.sh --host="i686-pc-mingw32" \
+	  --target="i686-pc-mingw32" \
+	  --build="$(BUILD_TYPE)" \
+	  --disable-gtk-widgets \
+	  --with-winsys=none \
+	  --prefix="$(PWD)/mx-install" \
+	  CFLAGS="-O2 -mms-bitfields" \
+	  PKG_CONFIG="$(PWD)/deps-build/run-pkg-config.sh" \
+	  PKG_CONFIG_PATH="$(PWD)/cogl-install/lib/pkgconfig:$(PWD)/clutter-install/lib/pkgconfig"
+	make -C mx-$(MX_VERSION) all install
+	$(LIB) /machine:i386 \
+	/def:mx-$(MX_VERSION)/mx/.libs/libmx-1.0-2.dll.def \
+	/out:$(PWD)/mx-install/lib/mx-1.0.lib \
+	/name:libmx-1.0-2.dll
+	touch $@
+
 fixprefix.exe : fixprefix.c
 	$(CC) -Wall -O2 -o $@ $<
 
-clutter.wxs : generate-msi.pl deps-install-stamp cogl-install-stamp clutter-install-stamp clutter.wxs.in
+clutter.wxs : generate-msi.pl deps-install-stamp cogl-install-stamp clutter-install-stamp mx-install-stamp clutter.wxs.in
 	perl generate-msi.pl \
 	--packageversion="$(PACKAGE_VERSION)" \
 	"Clutter dependencies:deps-install" \
 	"Cogl:cogl-install" \
 	"Clutter:clutter-install" \
+	"Mx:mx-install" \
 	> $@
 
 %.wixobj : %.wxs
