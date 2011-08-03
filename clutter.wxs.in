@@ -42,10 +42,12 @@
     </Feature>
 
     <CustomAction Id='FixPrefixes' BinaryKey='fixprefix.exe'
+                  Execute='deferred' Impersonate='no'
                   ExeCommand='&quot;[APPLICATIONROOTDIRECTORY]&quot; @PC_FILES@' />
 
     <InstallExecuteSequence>
-      <Custom Action='FixPrefixes' After='InstallFinalize'>
+      <Custom Action='FixPrefixes'
+              Before='InstallFinalize'>
         NOT Installed
       </Custom>
     </InstallExecuteSequence>
