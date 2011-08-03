@@ -192,6 +192,30 @@ rewrite_file (const char *filename,
   return TRUE;
 }
 
+static char *
+get_short_path (const char *long_path)
+{
+  DWORD length;
+  char *short_path;
+
+  length = GetShortPathName (long_path, NULL, 0);
+
+  if (length == 0)
+    return NULL;
+
+  short_path = malloc (length);
+  if (short_path == NULL)
+    return NULL;
+
+  if (GetShortPathName (long_path, short_path, length) == 0)
+    {
+      free (short_path);
+      return NULL;
+    }
+
+  return short_path;
+}
+
 int CALLBACK
 WinMain (HINSTANCE instance,
          HINSTANCE prev_instance,
@@ -199,6 +223,7 @@ WinMain (HINSTANCE instance,
          int cmd_show)
 {
   char *file_buf;
+  char *prefix;
   size_t file_length;
   int i;
 
@@ -210,12 +235,19 @@ WinMain (HINSTANCE instance,
       return 1;
     }
 
+  prefix = get_short_path (argv[0]);
+  if (prefix == NULL)
+    {
+      fprintf (stderr, "error getting short path\n");
+      return 1;
+    }
+
   for (i = 1; i < argc; i++)
     {
       if (!get_file_contents (argv[i], &file_buf, &file_length))
         return 1;
 
-      if (!rewrite_file (argv[i], file_buf, file_length, argv[0]))
+      if (!rewrite_file (argv[i], file_buf, file_length, prefix))
         {
           free (file_buf);
           return 1;
@@ -223,6 +255,8 @@ WinMain (HINSTANCE instance,
 
       free (file_buf);
     }
+
+  free (prefix);
 
   return 0;
 }
