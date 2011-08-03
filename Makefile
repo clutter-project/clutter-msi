@@ -113,5 +113,19 @@ clutter.msi : $(WIXOBJS) fixprefix.exe
 	rm -rf cab-cache
 	mkdir -p cab-cache
 	$(LIGHT) -cc cab-cache $(WIXOBJS)
+	@cabextract -p -F TestFileA 'cab-cache/#clutter.cab' > test-result-a
+	@cabextract -p -F TestFileB 'cab-cache/#clutter.cab' > test-result-b
+	@if cmp -s test-result-{a,b}; then \
+	  echo; \
+	  echo "***ERROR***"; \
+	  echo; \
+	  echo "You have hit a bug where light.exe is combining files that "; \
+	  echo "have the same size. The resulting .msi will not work. If "; \
+	  echo "you are using WiX 3.5 under Wine you may want to try "; \
+	  echo "3.0 instead."; \
+	  echo; \
+	  rm -f "$@"; \
+	  exit 1; \
+	fi
 
 .PHONY : all

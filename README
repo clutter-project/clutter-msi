@@ -34,11 +34,11 @@ but it seems to work to just hit cancel and ignore the complaint.
 
 Now install WiX:
 
-wget -O Wix35.msi "http://download.codeplex.com/Project/Download/\
-FileDownload.aspx?ProjectName=wix&DownloadId=204417&\
-FileTime=129409234222130000&Build=17950"
+wget -O Wix3.msi "http://download.codeplex.com/Project/Download/\
+FileDownload.aspx?ProjectName=wix&DownloadId=119160&\
+FileTime=129168985376800000&Build=17950"
 
-msiexec /i Wix35.msi
+msiexec /i Wix3.msi
 
 WiX tries to use a library called msi.dll. Wine has a wrapper for this
 but it doesn't seem to work with WiX. However it's possible to use a
@@ -46,6 +46,12 @@ copy from a native installation of Windows instead. The Makefile will
 tell Wine not to use the override when it runs programs from WiX.
 
 cp msi.dll $CLUTTER_MSI_ROOT/drive_c/windows/system32/msi.dll
+
+Note that version 3.5 of Wix doesn't appear to work under Wine. It
+seems to end up combining files that have the same size. There is some
+info about this here:
+
+http://osdir.com/ml/wine-bugs/2011-06/msg02153.html
 
 ====== Installing lib.exe ======
 
@@ -69,7 +75,7 @@ PATH with the value:
 
 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin;
 c:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE;
-c:\Program Files (x86)\Windows Installer XML v3.5\bin
+c:\Program Files (x86)\Windows Installer XML v3\bin
 
 ====== Build the MSI file ======
 

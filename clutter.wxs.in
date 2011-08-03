@@ -22,6 +22,25 @@
          install process to fix the prefix in the .pc files -->
     <Binary Id='fixprefix.exe' SourceFile='fixprefix.exe' />
 
+    <!-- This is to verify that the CAB file isn't combining files
+         that have the same size. The components have the level set to
+         zero so these files won't actually get installed -->
+    <Component Id="TestFileA" Directory="APPLICATIONROOTDIRECTORY"
+               Guid='*'>
+      <File Id='TestFileA' Source='test-file-a' KeyPath='yes'
+            Name='TestFileA' />
+    </Component>
+    <Component Id="TestFileB" Directory="APPLICATIONROOTDIRECTORY"
+               Guid='*'>
+      <File Id='TestFileB' Source='test-file-b' KeyPath='yes'
+            Name='TestFileB' />
+    </Component>
+    <Feature Id="StubFeature" Title="Stub feature for testing the cab file"
+             Level='0' AllowAdvertise="no">
+      <ComponentRef Id="TestFileA" />
+      <ComponentRef Id="TestFileB" />
+    </Feature>
+
     <CustomAction Id='FixPrefixes' BinaryKey='fixprefix.exe'
                   ExeCommand='&quot;[APPLICATIONROOTDIRECTORY]&quot; @PC_FILES@' />
 
