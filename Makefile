@@ -17,7 +17,7 @@ LIGHT = WINEDLLOVERRIDES="msi=n" WINEPREFIX="$(PWD)" wine light.exe
 
 WIXOBJS = clutter.wixobj
 
-all : clutter.msi
+all : clutter-$(PACKAGE_VERSION).msi
 
 downloads/clutter-$(CLUTTER_VERSION).tar.bz2 :
 	mkdir -p downloads
@@ -145,10 +145,10 @@ clutter.wxs : generate-msi.pl deps-install-stamp cogl-install-stamp clutter-inst
 %.wixobj : %.wxs
 	$(CANDLE) $<
 
-clutter.msi : $(WIXOBJS) fixprefix.exe
+clutter-$(PACKAGE_VERSION).msi : $(WIXOBJS) fixprefix.exe
 	rm -rf cab-cache
 	mkdir -p cab-cache
-	$(LIGHT) -cc cab-cache $(WIXOBJS)
+	$(LIGHT) -cc cab-cache -out $@ $(WIXOBJS)
 	@cabextract -p -F TestFileA 'cab-cache/#clutter.cab' > test-result-a
 	@cabextract -p -F TestFileB 'cab-cache/#clutter.cab' > test-result-b
 	@if cmp -s test-result-{a,b}; then \
