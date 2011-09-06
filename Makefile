@@ -10,6 +10,8 @@ CLUTTER_GIT_PATCH = http://git.gnome.org/browse/clutter/patch/?id=
 COGL_GIT_PATCH = http://git.gnome.org/browse/cogl/patch/?id=
 BUILD_TYPE = `uname -m`-unknown-linux-gnu
 
+CFLAGS = "-O2 -mms-bitfields -I$(PWD)/deps-install/include"
+
 LIB = WINEPREFIX="$(PWD)" wine lib.exe
 
 CANDLE = WINEDLLOVERRIDES="msi=n" WINEPREFIX="$(PWD)" wine candle.exe
@@ -82,7 +84,7 @@ cogl-install-stamp : cogl-source-stamp clutter-source-stamp deps-install-stamp
 	  --disable-glx \
 	  --enable-wgl \
 	  --prefix="$(PWD)/cogl-install" \
-	  CFLAGS="-O2 -mms-bitfields" \
+	  CFLAGS=$(CFLAGS) \
 	  PKG_CONFIG="$(PWD)/deps-build/run-pkg-config.sh"
 	make -C cogl-$(COGL_VERSION) all install
 	$(LIB) /machine:i386 \
@@ -102,7 +104,7 @@ clutter-install-stamp : clutter-source-stamp deps-install-stamp cogl-install-sta
 	  --build="$(BUILD_TYPE)" \
 	  --with-flavour=win32 \
 	  --prefix="$(PWD)/clutter-install" \
-	  CFLAGS="-O2 -mms-bitfields" \
+	  CFLAGS=$(CFLAGS) \
 	  PKG_CONFIG="$(PWD)/deps-build/run-pkg-config.sh" \
 	  PKG_CONFIG_PATH="$(PWD)/cogl-install/lib/pkgconfig"
 	make -C clutter-$(CLUTTER_VERSION) all install
@@ -120,7 +122,7 @@ mx-install-stamp : mx-source-stamp clutter-install-stamp
 	  --disable-gtk-widgets \
 	  --with-winsys=none \
 	  --prefix="$(PWD)/mx-install" \
-	  CFLAGS="-O2 -mms-bitfields" \
+	  CFLAGS=$(CFLAGS) \
 	  PKG_CONFIG="$(PWD)/deps-build/run-pkg-config.sh" \
 	  PKG_CONFIG_PATH="$(PWD)/cogl-install/lib/pkgconfig:$(PWD)/clutter-install/lib/pkgconfig"
 	make -C mx-$(MX_VERSION) all install
