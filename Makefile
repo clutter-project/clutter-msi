@@ -1,9 +1,9 @@
 CLUTTER_MAJOR_VERSION = 1.7
-CLUTTER_VERSION = 1.7.6
+CLUTTER_VERSION = 1.7.14
 COGL_MAJOR_VERSION = 1.7
-COGL_VERSION = 1.7.4
+COGL_VERSION = 1.7.8
 MX_MAJOR_VERSION = 1.3
-MX_VERSION = 1.3.0
+MX_VERSION = 1.3.1
 PACKAGE_VERSION = $(CLUTTER_VERSION).1
 CC = i686-pc-mingw32-gcc
 CLUTTER_GIT_PATCH = http://git.gnome.org/browse/clutter/patch/?id=
@@ -35,33 +35,19 @@ downloads/cogl-$(COGL_VERSION).tar.bz2 :
 
 clutter-source-stamp : downloads/clutter-$(CLUTTER_VERSION).tar.bz2
 	tar -jxf $<
-	if test "$(CLUTTER_VERSION)" = "1.7.6"; then \
+	if test "$(CLUTTER_VERSION)" = "1.7.14"; then \
 	  ( cd clutter-$(CLUTTER_VERSION) && wget -q -O - \
-	    "$(CLUTTER_GIT_PATCH)91ace65cae" \
+	    "$(CLUTTER_GIT_PATCH)c5cf8c5" \
 	    | patch -p1 ); \
 	fi
 	touch $@
 
 cogl-source-stamp : downloads/cogl-$(COGL_VERSION).tar.bz2
 	tar -jxf $<
-	if test "$(COGL_VERSION)" = "1.7.4"; then \
-	  ( cd cogl-$(COGL_VERSION) \
-	     && for x in d259a87602516 f7bdc92d6c397 38deb9747; do \
-	       wget -q -O - \
-	         "$(COGL_GIT_PATCH)$$x" \
-	       | patch -f -p1; done ); \
-	fi
 	touch $@
 
 mx-source-stamp : downloads/mx-$(MX_VERSION).tar.bz2
 	tar -jxf $<
-	( cd mx-$(MX_VERSION) \
-	  && for x in \
-	      0001-mx-create-image-cache-Use-GDir-instead-of-opendir.patch \
-	      0002-mx-image-Conditionally-call-sysconf.patch \
-	      0003-configure.ac-Add-no-undefined-to-the-libtool-flags.patch; \
-	       do \
-	      patch -p1 < ../"$$x" || exit 1; done )
 	touch $@
 
 deps-install-stamp : clutter-source-stamp
