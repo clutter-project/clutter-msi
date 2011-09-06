@@ -166,4 +166,8 @@ clutter-$(PACKAGE_VERSION).msi : $(WIXOBJS) fixprefix.exe
 	  exit 1; \
 	fi
 
-.PHONY : all
+clean :
+	rm -rf *.msi *.wixobj clutter.wxs \
+	 {deps,cogl,clutter,mx}-{source,install}{-stamp,}
+
+.PHONY : all clean
